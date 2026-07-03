@@ -126,20 +126,24 @@ def process_raw_mm2_file(file_path):
     print(f"✓ Formatted standalone MM2 file : {file_path}")
 
 def main():
-    if len(sys.argv) > 1:
-        files_to_process = sys.argv[1:]
+    # Check if user passed the --check flag anywhere in arguments
+    check_mode = "--check" in sys.argv
+    
+    # Remove --check from argument processing list if present
+    args = [a for a in sys.argv[1:] if a != "--check"]
+    
+    if len(args) > 0:
+        files_to_process = args
     else:
         target_dir = 'structuring_code'
         mm2_programs_dir = os.path.join(target_dir, 'mm2_programs')
         files_to_process = []
         
-        # 1. Discover Markdown files
         if os.path.exists(target_dir):
             for f in os.listdir(target_dir):
                 if f.endswith('.md'):
                     files_to_process.append(os.path.join(target_dir, f))
                     
-        # 2. Discover Standalone Program files (.mm2)
         if os.path.exists(mm2_programs_dir):
             for f in os.listdir(mm2_programs_dir):
                 if f.endswith('.mm2'):
@@ -147,16 +151,51 @@ def main():
 
     if not files_to_process:
         print('No files discovered or provided for processing.')
-        return
+        sys.exit(0)
+
+    mismatches = 0
 
     for file_path in files_to_process:
         if os.path.exists(file_path):
+            # Read original content to compare later
+            with open(file_path, 'r', encoding='utf-8') as f:
+                original_content = f.read()
+
+            # Format the body text natively
+            formatted_content = format_mm2_code(original_content) if file_path.endswith('.mm2') else None
+            
+            # If markdown, we'd need to mock the regex replacement comparison
+            # For simplicity, we compare if the file changes after processing
             if file_path.endswith('.md'):
                 process_markdown_file(file_path)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    new_content = f.read()
+                if original_content != new_content:
+                    mismatches += 1
+                    if check_mode:
+                        # Revert the file change if we are only checking
+                        with open(file_path, 'w', encoding='utf-8') as f:
+                            f.write(original_content)
             elif file_path.endswith('.mm2'):
-                process_raw_mm2_file(file_path)
+                if original_content != formatted_content:
+                    mismatches += 1
+                    if not check_mode:
+                        process_raw_mm2_file(file_path)
+
+            # Print log based on mode
+            if original_content != (formatted_content if file_path.endswith('.mm2') else new_content):
+                if check_mode:
+                    print(f"❌ File requires formatting: {file_path}")
         else:
             print(f'Skipping missing file: {file_path}')
+
+    # Exit strategies based on validation state
+    if check_mode and mismatches > 0:
+        print(f"\n❌ Error: {mismatches} file(s) failed style verification guidelines.")
+        sys.exit(1)
+    elif check_mode:
+        print("✅ Success: All files are perfectly formatted!")
+        sys.exit(0)
 
 if __name__ == '__main__':
     main()
