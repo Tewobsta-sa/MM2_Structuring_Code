@@ -19,7 +19,7 @@
 (eval (0) -> 0)
 (eval (1) -> 1)
 
-(exec 0 
-    (, (eval $expr -> 1))
-    (, (results-in 1 <- $expr))
+(exec 0
+  (, (eval $expr -> 1))
+  (, (results-in 1 <- $expr))
 )

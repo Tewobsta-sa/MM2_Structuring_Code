@@ -23,7 +23,6 @@ We decide to manually concatenate them to have the contents of both files.
 ; from [`Basics_01_file1.mm2`](https://github.com/ClarkeRemy/MM2_Structuring_Code/blob/main/structuring_code/mm2_programs/Basics_01_file1.mm2)
 a
 b
-
 ; from [`Basics_02_file2.mm2`](https://github.com/ClarkeRemy/MM2_Structuring_Code/blob/main/structuring_code/mm2_programs/Basics_02_file2.mm2)
 b
 c
@@ -47,7 +46,6 @@ We can do this simply by adding a prefix.
 ; from [`Basics_01_file1.mm2`](https://github.com/ClarkeRemy/MM2_Structuring_Code/blob/main/structuring_code/mm2_programs/Basics_01_file1.mm2)
 (file1 a)
 (file1 b)
-
 ; from [`Basics_02_file2.mm2`](https://github.com/ClarkeRemy/MM2_Structuring_Code/blob/main/structuring_code/mm2_programs/Basics_02_file2.mm2)
 (file2 b)
 (file2 c)
@@ -69,14 +67,12 @@ We will try this with an exec (the details of execs explored later).
 ; from `file1.mm2`
 (file1 a)
 (file1 b)
-
 ; from `file2.mm2`
 (file2 b)
 (file2 c)
-
-(exec 0 
-    (, (file1     $x) )
-    (, (projected $x) )
+(exec 0
+  (, (file1 $x) )
+  (, (projected $x) )
 )
 ```
 run `./mork run Basics_05_file1_file2_project.mm2`
@@ -114,9 +110,9 @@ We have 3 primary ways to construct expressions
 ## Exec
 MM2 looks like this 
 ```
-(exec <priority> 
-      <sources>
-      <sinks>
+(exec <priority>
+  <sources>
+  <sinks>
 )
 ```
 When an exec is run, it is removed from the space.
@@ -172,8 +168,8 @@ Say we had this space :
 (a 2)
 (b 3)
 (exec 0
-   (, (a $x) (b $y) )
-   (, (ab $x $y)    )
+  (, (a $x) (b $y) )
+  (, (ab $x $y) )
 )
 ```
 run `./mork run Basics_07_Sources_Sinks.mm2`
@@ -204,13 +200,11 @@ The `-` action is particularly useful, but use with care, it's behavior is non-m
 
 ```
 (exec 0
-    (, $x ) 
-    (O 
-        (- b)
-    )
-    
+  (, $x )
+  (O
+    (- b)
+  )
 )
-
 a
 b
 ```

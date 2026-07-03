@@ -16,12 +16,12 @@ Lets work backward, we will assume we know where the locations are by using pred
 ```
 ; we use `arg_a`, `arg_b` and `ret` as 'locations'
 (exec 0
-   (, (arg_a $val_a) 
-      (arg_b $val_b)
-   )
-   (, (ret   $val_a) 
-      (ret   $val_b) 
-   )
+  (, (arg_a $val_a)
+    (arg_b $val_b)
+  )
+  (, (ret $val_a)
+    (ret $val_b)
+  )
 )
 
 ; Here are some values at those 'locations'
@@ -57,15 +57,15 @@ We need an exec to build an exec!
 Our first exec will need a union definition:
 
 ```
-; The definition is just data, 
-;   the point is to find this data that has a useful shape dynamically.
+; The definition is just data,
+; the point is to find this data that has a useful shape dynamically.
 ((union ($in_a $in_b) -> $out)
-    (, ($in_a $a)           
-       ($in_b $b)
-    )
-    (, ($out $a)
-       ($out $b)
-    )
+  (, ($in_a $a)
+    ($in_b $b)
+  )
+  (, ($out $a)
+    ($out $b)
+  )
 )
 ; the argument data
 (arg_a a)
@@ -77,7 +77,7 @@ Our first exec will need a union definition:
 
 ; what will search up our definition
 (exec 0 (, ((union (arg_a arg_b) -> ret) $p $t) )
-        (, (exec 0 $p $t) )
+  (, (exec 0 $p $t) )
 )
 ```
 run `./mork run --steps 1 Set_Ops_02_Parameterized_Locations.mm2`
@@ -97,22 +97,22 @@ result in the same value.
 Let's examine some example arguments and results.
 ```
 unify : (1 2) (1 2)
-MGU   : {}
+MGU : {}
 subst : (1 2)
 ; constants match themselves
 
 unify : $x (1 2)
-MGU   : { $x => (1 2) }
+MGU : { $x => (1 2) }
 subst : (1 2)
 ; free variables match any structure, structures match any free variable
 
-unify : ($x 2) (1 $y) 
-MGU   : { $x => 1, $y => 2 } 
+unify : ($x 2) (1 $y)
+MGU : { $x => 1, $y => 2 }
 subst : (1 2)
 ; matching happens on both sides
 
 unify : (($x $y) (2 $y)) ((3 4) $z)
-MGU   : { $x => 3, $y => 4, $z => (2 $y)}
+MGU : { $x => 3, $y => 4, $z => (2 $y)}
 subst : ((3 4) (2 4))
 ; shared variables share substitutions
 ```
@@ -126,12 +126,12 @@ The exec has this pattern:
 The definition is here:
 ```
 ((union ($in_a $in_b) -> $out)
-    (, ($in_a $a)           
-       ($in_b $b)
-    )
-    (, ($out $a)
-       ($out $b)
-    )
+  (, ($in_a $a)
+    ($in_b $b)
+  )
+  (, ($out $a)
+    ($out $b)
+  )
 )
 ```
 Here is the MGU:
@@ -139,13 +139,13 @@ Here is the MGU:
 MGU
 { $in_a => arg_a
 , $in_b => arg_b
-, $out  => ret
-, $p    => (, ($in_a $a)           
-              ($in_b $b)
-           )
-, $t    => (, ($out $a)
-              ($out $b)
-           )
+, $out => ret
+, $p => (, ($in_a $a)
+  ($in_b $b)
+)
+, $t => (, ($out $a)
+  ($out $b)
+)
 }
 ```
 We can then apply the MGU to itself until it has no more recursive parts.  
@@ -154,13 +154,13 @@ We can then apply the MGU to itself until it has no more recursive parts.
 MGU
 { $in_a => arg_a
 , $in_b => arg_b
-, $out  => ret
-, $p    => (, (arg_a $a)           
-              (arg_b $b)
-           )
-, $t    => (, (ret $a)
-              (ret $b)
-           )
+, $out => ret
+, $p => (, (arg_a $a)
+  (arg_b $b)
+)
+, $t => (, (ret $a)
+  (ret $b)
+)
 }
 ```
 We see what `$p` and `$t` are now.
@@ -171,12 +171,12 @@ Lets now substitute the exec's template.
 
 ; becomes what we wrote originally!
 (exec 0
-   (, (arg_a $a)           
-      (arg_b $b)
-   )
-   (, (ret $a)
-      (ret $b)
-   )
+  (, (arg_a $a)
+    (arg_b $b)
+  )
+  (, (ret $a)
+    (ret $b)
+  )
 )
 ```
 run `./mork run --steps 0 Set_Ops_02_Parameterized_Locations.mm2` and see the result.
@@ -203,19 +203,18 @@ Union was explained above.
 
 ```
 ((union ($in_a $in_b) -> $out)
-    (, ($in_a $a)           
-       ($in_b $b)
-    )
-    (, ($out $a)
-       ($out $b)
-    )
+  (, ($in_a $a)
+    ($in_b $b)
+  )
+  (, ($out $a)
+    ($out $b)
+  )
 )
-
 ```
 The exec using the definition..
 ```
 (exec 0 (, ((union (arg_a arg_b) -> ret) $p $t) )
-        (, (exec 0 $p $t) )
+  (, (exec 0 $p $t) )
 )
 ```
 
@@ -234,16 +233,16 @@ After consuming the exec, it will leave behind these new values.
 For intersection we need to have the __constraint__ that both argument elements are the same value.
 ```
 ((intersection ($in_a $in_b) -> $out)
-    (, ($in_a $a)           
-       ($in_b $a)
-    )
-    (, ($out $a) )
+  (, ($in_a $a)
+    ($in_b $a)
+  )
+  (, ($out $a) )
 )
 ```
 The exec using the definition..
 ```
 (exec 0 (, ((intersection (arg_a arg_b) -> ret) $p $t) )
-        (, (exec 0 $p $t) )
+  (, (exec 0 $p $t) )
 )
 ```
 run `./mork run Set_Ops_04_Intersection.mm2`
@@ -259,18 +258,18 @@ Set difference we need to just make sure the order of the arguments are clear.
 The right argument will remove from the left. We are going to need to use the `O` sink.
 ```
 ((difference ($in_a $in_b) -> $out)
-    (, ($in_a $a)           
-       ($in_b $b)
-    )
-    (O (+ ($out $a) )
-       (- ($out $b) )
-    )
+  (, ($in_a $a)
+    ($in_b $b)
+  )
+  (O (+ ($out $a) )
+    (- ($out $b) )
+  )
 )
 ```
 The exec using the definition..
 ```
 (exec 0 (, ((difference (arg_a arg_b) -> ret) $p $t) )
-        (, (exec 0 $p $t) )
+  (, (exec 0 $p $t) )
 )
 ```
 run `./mork run Set_Ops_05_Difference.mm2`
@@ -284,21 +283,21 @@ After consuming the exec, it will leave behind these new values.
 Symmetric difference could be implemented by computing the union, and the intersection, then taking the difference of the union and the intersection. The example below does this as a single transaction.
 ```
 ((symmetric-difference ($in_a $in_b) -> $out)
-    (, ($in_a $a)
-       ($in_b $b)
-       ($in_a $mid)
-       ($in_b $mid)
-    )
-    (O (+ ($out $a)   )
-       (+ ($out $b)   )
-       (- ($out $mid) )
-    )
+  (, ($in_a $a)
+    ($in_b $b)
+    ($in_a $mid)
+    ($in_b $mid)
+  )
+  (O (+ ($out $a) )
+    (+ ($out $b) )
+    (- ($out $mid) )
+  )
 )
 ```
 The exec using the definition.
 ```
 (exec 0 (, ((symmetric-difference (arg_a arg_b) -> ret) $p $t) )
-        (, (exec 0 $p $t) )
+  (, (exec 0 $p $t) )
 )
 ```
 run `./mork run Set_Ops_06_Symmetric_Difference.mm2`

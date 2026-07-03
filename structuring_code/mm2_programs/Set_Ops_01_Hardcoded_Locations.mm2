@@ -1,11 +1,11 @@
 ; we use `arg_a`, `arg_b` and `ret` as 'locations'
 (exec 0
-   (, (arg_a $val_a) 
-      (arg_b $val_b)
-   )
-   (, (ret   $val_a) 
-      (ret   $val_b) 
-   )
+  (, (arg_a $val_a)
+    (arg_b $val_b)
+  )
+  (, (ret $val_a)
+    (ret $val_b)
+  )
 )
 
 ; Here are some values at those 'locations'

@@ -1,0 +1,9 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format-mm2
+        name: Universal MM2 Formatter
+        entry: python scripts/format_mm2.py
+        language: python
+        files: \.(mm2|md)$
+        pass_filenames: true

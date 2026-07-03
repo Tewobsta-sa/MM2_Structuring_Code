@@ -1,0 +1,22 @@
+name: Format Check
+
+on:
+  pull_request:
+    branches: "**"
+  push:
+    branches: "**"
+
+jobs:
+  format-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Runtime Python Environment
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run Formatter in Verification Mode
+        run: python scripts/format_mm2.py --check
