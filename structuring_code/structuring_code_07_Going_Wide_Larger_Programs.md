@@ -21,11 +21,11 @@ lets look at the `(MACRO (fork ....` code for an example.
 ; case/1
 (MACRO
   (fork $proc $op)
-      (, ($proc $op (fork $ctx) ($case/1 $x))
-      )
-      (, ($proc $op (fork ($ctx arg/0 )) $x     )
-         ($proc $op (join ($ctx case/1)) $case/1)
-      )
+  (, ($proc $op (fork $ctx) ($case/1 $x))
+  )
+  (, ($proc $op (fork ($ctx arg/0 )) $x )
+    ($proc $op (join ($ctx case/1)) $case/1)
+  )
 )
 ```
 
@@ -34,17 +34,14 @@ After the fork happens, we don't need to spawn it again, so we could remove it. 
 ; case/2
 (MACRO
   (fork $proc $op)
-      (, ($proc $op (fork $ctx) ($case/2 $x $y))
-
-      )
-      (O 
-         (+ ($proc $op (fork ($ctx arg/0)) $x     ) )
-         (+ ($proc $op (fork ($ctx arg/1)) $y     ) )
-         (+ ($proc $op (join ($ctx case/2)) $case/2) )
-
-
-         (- ($proc $op (fork $ctx) ($case/2 $x $y)) )
-      )
+  (, ($proc $op (fork $ctx) ($case/2 $x $y))
+  )
+  (O
+    (+ ($proc $op (fork ($ctx arg/0)) $x ) )
+    (+ ($proc $op (fork ($ctx arg/1)) $y ) )
+    (+ ($proc $op (join ($ctx case/2)) $case/2) )
+    (- ($proc $op (fork $ctx) ($case/2 $x $y)) )
+  )
 )
 ```
 Note how we remove what we matched `($proc $op (fork $ctx) ($case/2 $x $y))`.
@@ -56,18 +53,16 @@ Join can be modified similarly:
 ; case/2
 (MACRO
   (join $proc $op)
-      (, ($proc $op (join ($ctx case/2)) $case/2)
-         ($proc $op (join ($ctx arg/0 )) $x     )
-         ($proc $op (join ($ctx arg/1 )) $y     )
-
-         ($op ($case/2 $x $y) -> $out)
-      )
-      (O (+ ($proc $op (join $ctx) $out) )
-
-         (- ($proc $op (join ($ctx case/2)) $case/2) )
-         (- ($proc $op (join ($ctx arg/0 )) $x     ) )
-         (- ($proc $op (join ($ctx arg/1 )) $y     ) )
-      )
+  (, ($proc $op (join ($ctx case/2)) $case/2)
+    ($proc $op (join ($ctx arg/0 )) $x )
+    ($proc $op (join ($ctx arg/1 )) $y )
+    ($op ($case/2 $x $y) -> $out)
+  )
+  (O (+ ($proc $op (join $ctx) $out) )
+    (- ($proc $op (join ($ctx case/2)) $case/2) )
+    (- ($proc $op (join ($ctx arg/0 )) $x ) )
+    (- ($proc $op (join ($ctx arg/1 )) $y ) )
+  )
 )
 ```
 This looks more involved, but this is only because the 3 expressions we join, all go out of scope together.

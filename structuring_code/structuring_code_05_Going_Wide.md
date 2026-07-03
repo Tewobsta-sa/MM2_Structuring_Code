@@ -8,16 +8,16 @@ MM2 code is better when it can process many expressions in a single transaction 
 Say one put this into the space for processing, and wanted to evaluate it.
 ```
 (INPUT
-   (if (or (1) 
-           (not (and (or (1) (0))
-                     (1)
-                )
-           )
-       )
-       (and (1) 
-            (or (0) (1))
-       )
-   )
+  (if (or (1)
+      (not (and (or (1) (0))
+          (1)
+        )
+      )
+    )
+    (and (1)
+      (or (0) (1))
+    )
+  )
 )
 ```
 The goal is to compute an output `(OUTPUT $OUTPUT)`.
@@ -49,29 +49,25 @@ What follows are truth tables.
 (eval (and 0 1) -> 0)
 (eval (and 1 0) -> 0)
 (eval (and 1 1) -> 1)
-
 (eval (or 0 0) -> 0)
 (eval (or 0 1) -> 1)
 (eval (or 1 0) -> 1)
 (eval (or 1 1) -> 1)
-
 (eval (if 0 0) -> 1)
 (eval (if 0 1) -> 1)
 (eval (if 1 0) -> 0)
 (eval (if 1 1) -> 1)
-
 (eval (not 0) -> 1)
 (eval (not 1) -> 0)
-
 (eval (0) -> 0)
 (eval (1) -> 1)
 ```
 
 We can try the truth tables with an exec to find all ways to compute `1` with eval
 ```
-(exec 0 
-    (, (eval $expr -> 1))
-    (, (results-in 1 <- $expr))
+(exec 0
+  (, (eval $expr -> 1))
+  (, (results-in 1 <- $expr))
 )
 ```
 run `./mork run Going_Wide_01_Finite_Function.mm2`
@@ -94,21 +90,18 @@ If we can expose any number of expressions in this shape, we can process them in
 lets see how we would manually rewrite this using the above tables on a smaller example.
 ```
 (and (or (1) (0))
-     (if (1) (1))
+  (if (1) (1))
 )
-
 => (eval ($in) -> $out)
 (and (or 1 0)
-     (if 1 1)
+  (if 1 1)
 )
 ; 4 leaves got processed
-
 => (eval ($bin_op $in_l $in_r) -> $out)
 (and 1
-     1
+  1
 )
 ; 2 nodes got processed
-
 => (eval ($bin_op $in_l $in_r) -> $out)
 1
 ; 1 node got processed
@@ -120,13 +113,13 @@ The issue we face is that leaf values are not trivially pattern matched upon.
 Let's think about why. Lets have a look at this expression again
 ```
 (and (or (1) (0))
-     (if (1) (1))
+  (if (1) (1))
 )
 ```
 in order to match the leaves, we need to write a pattern that is at least as nested as the expression.
 ```
-($op_0 ($op_1 ($l_00) ($l_01)) 
-       ($op_2 ($l_10) ($l_11))
+($op_0 ($op_1 ($l_00) ($l_01))
+  ($op_2 ($l_10) ($l_11))
 )
 ```
 
@@ -135,11 +128,11 @@ We are going to have to _invert_ this problem so that the value we match is triv
 If the original expression was inverted, then the leaves would be at the top.
 To describe this we will need multiple expressions
 ```
-((.   case/2) and)
-(((.  arg/1 ) case/2) or)
+((. case/2) and)
+(((. arg/1 ) case/2) or)
 ((((. arg/1 ) arg/1 ) case/0) 1)
 ((((. arg/1 ) arg/2 ) case/0) 0)
-(((.  arg/2 ) case/2) if)
+(((. arg/2 ) case/2) if)
 ((((. arg/2 ) arg/1 ) case/0) 1)
 ((((. arg/2 ) arg/2 ) case/0) 1)
 ```
@@ -154,89 +147,81 @@ We can now look at what node a leaf is connected to.
 For bare values:
 ```
 (, (($ctx case/0) $x)
-   (eval ($x) -> $out)
+  (eval ($x) -> $out)
 )
 ```
 for unary
 ```
 (, (($ctx case/1) $op)
-   (($ctx arg/1)  $x)
-   (eval ($op $x) -> $out)
+  (($ctx arg/1) $x)
+  (eval ($op $x) -> $out)
 )
 ```
 for binary
 ```
 (, (($ctx case/2) $op)
-   (($ctx arg/1)  $x)
-   (($ctx arg/2)  $y)
-   (eval ($op $x $y) -> $out)
+  (($ctx arg/1) $x)
+  (($ctx arg/2) $y)
+  (eval ($op $x $y) -> $out)
 )
 ```
 
 Let's try an evaluation, in our case we will simply add our results in.
 (values that no longer affect the computation will be shown together at the end)
 ```
-((.   case/2) and)
-(((.  arg/1)  case/2) or)
-((((. arg/1)  arg/1 ) case/0) 1)
-((((. arg/1)  arg/2 ) case/0) 0)
-(((.  arg/2)  case/2) if)
-((((. arg/2)  arg/1 ) case/0) 1)
-((((. arg/2)  arg/2 ) case/0) 1)
-
+((. case/2) and)
+(((. arg/1) case/2) or)
+((((. arg/1) arg/1 ) case/0) 1)
+((((. arg/1) arg/2 ) case/0) 0)
+(((. arg/2) case/2) if)
+((((. arg/2) arg/1 ) case/0) 1)
+((((. arg/2) arg/2 ) case/0) 1)
 => (exec 0 (, (($ctx case/0) $x)
-              (eval ($x) -> $out)
-           )
-           (, ($ctx $out) )
-   )
-
-((.   case/2) and)
-(((.  arg/1)  case/2) or)
-(((.  arg/1)  arg/1 ) 1)
-(((.  arg/1)  arg/2 ) 0)
-(((.  arg/2)  case/2) if)
-(((.  arg/2)  arg/1 ) 1)
-(((.  arg/2)  arg/2 ) 1)
-
-
+    (eval ($x) -> $out)
+  )
+  (, ($ctx $out) )
+)
+((. case/2) and)
+(((. arg/1) case/2) or)
+(((. arg/1) arg/1 ) 1)
+(((. arg/1) arg/2 ) 0)
+(((. arg/2) case/2) if)
+(((. arg/2) arg/1 ) 1)
+(((. arg/2) arg/2 ) 1)
 => (exec 0 (, (($ctx case/2) $op)
-              (($ctx arg/1)  $x)
-              (($ctx arg/2)  $y)
-              (eval ($op $x $y) -> $out)
-           )
-           (, ($ctx $out) )
-   )
-((.   case/2) and)
-((.   arg/1)  1)
-((.   arg/2)  1)
-
+    (($ctx arg/1) $x)
+    (($ctx arg/2) $y)
+    (eval ($op $x $y) -> $out)
+  )
+  (, ($ctx $out) )
+)
+((. case/2) and)
+((. arg/1) 1)
+((. arg/2) 1)
 => (exec 0 (, (($ctx case/2) $op)
-              (($ctx arg/1)  $x)
-              (($ctx arg/2)  $y)
-              (eval ($op $x $y) -> $out)
-           )
-           (, ($ctx $out) )
-   )
-
+    (($ctx arg/1) $x)
+    (($ctx arg/2) $y)
+    (eval ($op $x $y) -> $out)
+  )
+  (, ($ctx $out) )
+)
 ; the final result
 (. 1)
-
-
 ; the final space with only additions
 (. 1)
-((.   case/2) and)
-((.   arg/1)  1)
-((.   arg/2)  1)
-(((.  arg/1)  case/2) or)
-(((.  arg/1)  arg/1 ) 1)
-(((.  arg/1)  arg/2 ) 0)
-(((.  arg/2)  case/2) if)
-(((.  arg/2)  arg/1 ) 1)
-(((.  arg/2)  arg/2 ) 1)
-((((. arg/1)  arg/1 ) case/0) 1)
-((((. arg/1)  arg/2 ) case/0) 0)
-((((. arg/2)  arg/1 ) case/0) 1)
-((((. arg/2)  arg/2 ) case/0) 1)
+((. case/2) and)
+((. arg/1) 1)
+((. arg/2) 1)
+(((. arg/1) case/2) or)
+(((. arg/1) arg/1 ) 1)
+(((. arg/1) arg/2 ) 0)
+(((. arg/2) case/2) if)
+(((. arg/2) arg/1 ) 1)
+(((. arg/2) arg/2 ) 1)
+((((. arg/1) arg/1 ) case/0) 1)
+((((. arg/1) arg/2 ) case/0) 0)
+((((. arg/2) arg/1 ) case/0) 1)
+((((. arg/2) arg/2 ) case/0) 1)
 ```
 This does what we set out to do, run multiple expressions at once.
 
@@ -281,40 +266,39 @@ Start with case/0; it simply converts it.
 ```
 ; case/0
 (DEF fork
-      (, ((fork $ctx) ($case/0)) )
-      (, ((join ($ctx case/0)) $case/0) )
+  (, ((fork $ctx) ($case/0)) )
+  (, ((join ($ctx case/0)) $case/0) )
 )
 ```
 Then case/1 and case/2; Leave behind the case to join on and continue forking on the recursive part.
 ```
 ; case/1
 (DEF fork
-      (, ((fork $ctx) ($case/1 $x))   )
-      (, ((fork ($ctx arg/0 )) $x     )
-         ((join ($ctx case/1)) $case/1)
-      )
+  (, ((fork $ctx) ($case/1 $x)) )
+  (, ((fork ($ctx arg/0 )) $x )
+    ((join ($ctx case/1)) $case/1)
+  )
 )
 ; case/2
 (DEF fork
-      (, ((fork $ctx) ($case/2 $x $y)))
-      (, ((fork ($ctx arg/0 )) $x     )
-         ((fork ($ctx arg/1 )) $y     )
-         ((join ($ctx case/2)) $case/2)
-      )
+  (, ((fork $ctx) ($case/2 $x $y)))
+  (, ((fork ($ctx arg/0 )) $x )
+    ((fork ($ctx arg/1 )) $y )
+    ((join ($ctx case/2)) $case/2)
+  )
 )
 ```
 
 If the these are run in a loop an expression would be forked like so
 ```
 ((fork DONE) (and (or (1) (0))
-                  (if (1) (1))
-             )
-) 
+    (if (1) (1))
+  )
+)
 => fork case/2
 ((join (DONE case/2)) and)
 ((fork (DONE arg/1)) (or (1) (0)))
 ((fork (DONE arg/2)) (if (1) (1)))
-
 => fork case/2
 ((join (DONE case/2)) and)
 ((join ((DONE arg/1 ) case/2)) or)
@@ -323,7 +307,6 @@ If the these are run in a loop an expression would be forked like so
 ((join ((DONE arg/2 ) case/2)) if)
 ((fork ((DONE arg/2 ) arg/1 )) (1))
 ((fork ((DONE arg/2 ) arg/2 )) (1))
-
 ; we finally have all `join`
 =>fork case/0
 ((join (DONE case/2)) and)
@@ -339,37 +322,34 @@ We can rewrite our joins to be in a similar form.
 ```
 ; case/0
 (DEF join
-      (, ((join ($ctx case/0)) $case/0)
-
-         (eval ($case/0) -> $out)
-      )
-      (, ((join $ctx) $out) )
+  (, ((join ($ctx case/0)) $case/0)
+    (eval ($case/0) -> $out)
+  )
+  (, ((join $ctx) $out) )
 )
 ; case/1
 (DEF join
-      (, ((join ($ctx case/1)) $case/1)
-         ((join ($ctx arg/0)) $x)
-
-         (eval ($case/1 $x) -> $out)
-      )
-      (, ((join $ctx) $out)  )
+  (, ((join ($ctx case/1)) $case/1)
+    ((join ($ctx arg/0)) $x)
+    (eval ($case/1 $x) -> $out)
+  )
+  (, ((join $ctx) $out) )
 )
 ; case/2
 (DEF join
-      (, ((join ($ctx case/2)) $case/2)
-         ((join ($ctx arg/0 )) $x     )
-         ((join ($ctx arg/1 )) $y     )
-
-         (eval ($case/2 $x $y) -> $out)
-      )
-      (, ((join $ctx) $out)  )
+  (, ((join ($ctx case/2)) $case/2)
+    ((join ($ctx arg/0 )) $x )
+    ((join ($ctx arg/1 )) $y )
+    (eval ($case/2 $x $y) -> $out)
+  )
+  (, ((join $ctx) $out) )
 )
 ```
 
 We now have all our tools to make a main loop.
 Before the main loop we need to initialize the process
 ```
-(INPUT $INPUT) 
+(INPUT $INPUT)
 =>
 ((fork DONE) $INPUT)
 ```
@@ -377,9 +357,8 @@ Before the main loop we need to initialize the process
 Every time the main loop runs it will look for all our exec definitions, and itself.
 ```
 (, (DEF fork $fork_p $fork_t)
-   (DEF join $join_p $join_t)
-
-   (exec MAIN $main-pattern $main-template)
+  (DEF join $join_p $join_t)
+  (exec MAIN $main-pattern $main-template)
 )
 ```
 It will spawn all the execs.
@@ -393,12 +372,12 @@ Once this runs it will write the output, then remove the process state.
 ```
 (exec (TERM)
   (, ((join DONE) $OUTPUT)
-     ((fork $f_env) $arg)
-     ((join $j_env) $res)
+    ((fork $f_env) $arg)
+    ((join $j_env) $res)
   )
-  (O (+ (OUTPUT $OUTPUT)   )
-     (- ((fork $f_env) $arg) )
-     (- ((join $j_env) $res) )
+  (O (+ (OUTPUT $OUTPUT) )
+    (- ((fork $f_env) $arg) )
+    (- ((join $j_env) $res) )
   )
 )
 ```
@@ -406,7 +385,7 @@ Once this runs it will write the output, then remove the process state.
 When all the other execs have run, we reset the main loop when the conditions hold.
 ```
 (exec (RESET)
-  (, (($fork_join $ctx) $val)                 )
+  (, (($fork_join $ctx) $val) )
   (, (exec MAIN $main-pattern $main-template) )
 )
 ```

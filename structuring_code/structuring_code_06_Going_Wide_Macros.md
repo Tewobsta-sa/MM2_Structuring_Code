@@ -6,13 +6,12 @@ Lets have a look at some of the `DEF`s.
 ```
 ; case/2
 (DEF join
-      (, ((join ($ctx case/2)) $case/2)
-         ((join ($ctx arg/0 )) $x     )
-         ((join ($ctx arg/1 )) $y     )
-
-         (eval ($case/2 $x $y) -> $out)
-      )
-      (, ((join $ctx) $out)  )
+  (, ((join ($ctx case/2)) $case/2)
+    ((join ($ctx arg/0 )) $x )
+    ((join ($ctx arg/1 )) $y )
+    (eval ($case/2 $x $y) -> $out)
+  )
+  (, ((join $ctx) $out) )
 )
 ```
 There are 2 points we are going to modify.
@@ -26,14 +25,13 @@ Define a `MACRO`, which signals (to ourselves) that it requires expansion.
 ; case/2
 (MACRO
   (join $proc $op)
-      (, ($proc $op (join ($ctx case/2)) $case/2)
-         ($proc $op (join ($ctx arg/0 )) $x     )
-         ($proc $op (join ($ctx arg/1 )) $y     )
-
-         ($op ($case/2 $x $y) -> $out)
-      )
-      (, ($proc $op (join $ctx) $out)
-      )
+  (, ($proc $op (join ($ctx case/2)) $case/2)
+    ($proc $op (join ($ctx arg/0 )) $x )
+    ($proc $op (join ($ctx arg/1 )) $y )
+    ($op ($case/2 $x $y) -> $out)
+  )
+  (, ($proc $op (join $ctx) $out)
+  )
 )
 ```
 - `$proc` predicates the values to a namespace.
@@ -43,11 +41,11 @@ Define a `MACRO`, which signals (to ourselves) that it requires expansion.
 Make an exec with a high priority (in our case higher than `(BEGIN-PROGRAM)`) that will expand our `MACROS`s to generate our `DEF`s.
 ```
 ; the macro creates DEF, the MACROS are \"compiled out\"
-(exec (macro) 
-  (,
-     (MACRO ($name main eval) $p $t)
+(exec (macro)
+  (, 
+    (MACRO ($name main eval) $p $t)
   )
-  (, (DEF   ($name main eval) $p $t)
+  (, (DEF ($name main eval) $p $t)
   )
 )
 ```
@@ -56,43 +54,36 @@ The main loop is then modified to use the modified `DEF`s.
 ```
 ; the `MAIN` sources
 (, 
-   (DEF fork $fork_p $fork_t)
-   (DEF join $join_p $join_t)
-
-   (exec MAIN $main-pattern $main-template)
+  (DEF fork $fork_p $fork_t)
+  (DEF join $join_p $join_t)
+  (exec MAIN $main-pattern $main-template)
 )
 =>
 (, 
-   (DEF (fork main eval) $fork_p $fork_t)
-   (DEF (join main eval) $join_p $join_t)
-   
-   (exec MAIN $main-pattern $main-template)
+  (DEF (fork main eval) $fork_p $fork_t)
+  (DEF (join main eval) $join_p $join_t)
+  (exec MAIN $main-pattern $main-template)
 )
-
-
 ; The `(TERM)` sources
 (, ((join DONE) $OUTPUT)
-   ((fork $f_env) $arg)
-   ((join $j_env) $res)
+  ((fork $f_env) $arg)
+  ((join $j_env) $res)
 )
 =>
 (, (main eval (join DONE) $OUTPUT)
-   (main eval $env $arg)
+  (main eval $env $arg)
 )
-
-
 ; The `(TERM)` sinks
-(O (+ (OUTPUT $OUTPUT)   )
-   (- ((fork $f_env) $arg) )
-   (- ((join $j_env) $res) )
+(O (+ (OUTPUT $OUTPUT) )
+  (- ((fork $f_env) $arg) )
+  (- ((join $j_env) $res) )
 )
 =>
-(O (+ (OUTPUT $OUTPUT)      )
-   (- (main eval $env $arg) )
+(O (+ (OUTPUT $OUTPUT) )
+  (- (main eval $env $arg) )
 )
-
 ; The (RESET) exec sources
-(, (($fork_join $ctx) $val)           )
+(, (($fork_join $ctx) $val) )
 =>
 (, (main eval ($fork_join $ctx) $val) )
 ```
