@@ -10,6 +10,7 @@ def format_mm2_code(code_text):
       - Enforcing strict 2-space indentation.
       - Aligning closing parentheses on their own line for multi-line blocks.
       - Normalizing comments and spacing around commas.
+      - Preserving structural empty lines while collapsing consecutive duplicates.
     """
     # Normalize non-breaking spaces and tabs
     code_text = code_text.replace('\xa0', ' ').replace('\t', ' ')
@@ -17,12 +18,20 @@ def format_mm2_code(code_text):
     
     formatted_lines = []
     indent_level = 0
+    consecutive_empty = 0
     
     for line in lines:
         stripped = line.strip()
+        
+        # Handle empty lines gracefully to preserve readability
         if not stripped:
+            consecutive_empty += 1
+            if consecutive_empty <= 1:  # Allow at most one consecutive blank line
+                formatted_lines.append("")
             continue
             
+        consecutive_empty = 0
+
         # 1. Rule 10: Handle Standalone Comments
         if stripped.startswith(';'):
             # Standardize comment formatting ('; ' with 1 space)
@@ -55,7 +64,9 @@ def format_mm2_code(code_text):
             indent_level += (open_count - close_count_all)
             indent_level = max(0, indent_level)
 
-    return '\n'.join(formatted_lines) + '\n'
+    # Clean up trailing/leading blank lines
+    result_text = '\n'.join(formatted_lines).strip()
+    return result_text + '\n' if result_text else ''
 
 def looks_like_mm2_block(text):
     """
@@ -79,14 +90,16 @@ def process_markdown_file(file_path):
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # Match code blocks: ```mm2 or plain ``` fences
-    pattern = re.compile(r'(```(?:mm2)?\s*\n)(.*?)(```)', re.DOTALL)
+    # We dynamically construct the three backticks sequence to avoid issues
+    # with markdown parsers when nesting fences in a code block.
+    ticks = '`' * 3
+    pattern = re.compile(rf'({ticks}(?:mm2)?\s*\n)(.*?)({ticks})', re.DOTALL)
 
     def replacer(match):
         prefix = match.group(1)
         body = match.group(2)
         suffix = match.group(3)
-        if prefix.startswith('```mm2') or looks_like_mm2_block(body):
+        if 'mm2' in prefix or looks_like_mm2_block(body):
             formatted_body = format_mm2_code(body)
             return f"{prefix}{formatted_body}{suffix}"
         return match.group(0)
@@ -96,30 +109,54 @@ def process_markdown_file(file_path):
     with open(file_path, 'w', encoding='utf-8') as f:
         f.write(new_content)
 
-    print(f"✓ Formatted MM2 blocks in: {file_path}")
+    print(f"✓ Formatted MM2 blocks in markdown: {file_path}")
 
+def process_raw_mm2_file(file_path):
+    """
+    Formats standalone .mm2 program files directly.
+    """
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    formatted_content = format_mm2_code(content)
+
+    with open(file_path, 'w', encoding='utf-8') as f:
+        f.write(formatted_content)
+
+    print(f"✓ Formatted standalone MM2 file : {file_path}")
 
 def main():
     if len(sys.argv) > 1:
         files_to_process = sys.argv[1:]
     else:
         target_dir = 'structuring_code'
-        files_to_process = [
-            os.path.join(target_dir, f)
-            for f in os.listdir(target_dir)
-            if f.endswith('.md')
-        ] if os.path.exists(target_dir) else []
+        mm2_programs_dir = os.path.join(target_dir, 'mm2_programs')
+        files_to_process = []
+        
+        # 1. Discover Markdown files
+        if os.path.exists(target_dir):
+            for f in os.listdir(target_dir):
+                if f.endswith('.md'):
+                    files_to_process.append(os.path.join(target_dir, f))
+                    
+        # 2. Discover Standalone Program files (.mm2)
+        if os.path.exists(mm2_programs_dir):
+            for f in os.listdir(mm2_programs_dir):
+                if f.endswith('.mm2'):
+                    files_to_process.append(os.path.join(mm2_programs_dir, f))
 
     if not files_to_process:
-        print('No files to process.')
+        print('No files discovered or provided for processing.')
         return
 
     for file_path in files_to_process:
         if os.path.exists(file_path):
-            process_markdown_file(file_path)
+            if file_path.endswith('.md'):
+                process_markdown_file(file_path)
+            elif file_path.endswith('.mm2'):
+                process_raw_mm2_file(file_path)
         else:
             print(f'Skipping missing file: {file_path}')
-
 
 if __name__ == '__main__':
     main()
