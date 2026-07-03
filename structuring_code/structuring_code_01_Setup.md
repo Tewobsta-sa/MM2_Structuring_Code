@@ -34,11 +34,9 @@ The tutorial will from time to time ask you to run a `./mork run` from with `str
 There is a file `structuring_code/Setup_Hello_World.mm2`, here are the contents.
 ```
 (hello (Hello $name !) $name)
-
 (exec 0 (, (hello $out World) )
-        (, (say $out) )
+  (, (say $out) )
 )
-
 ```
 run `./mork run --steps 0 Setup_Hello_World.mm2`
 
@@ -50,7 +48,6 @@ dumping 2 expressions
 result:
 (say (Hello World !))
 (hello (Hello $a !) $a)
-
 ```
 The results are the full state of the program upon exiting.
 

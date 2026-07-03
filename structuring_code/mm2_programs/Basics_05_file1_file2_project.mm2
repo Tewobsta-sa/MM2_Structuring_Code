@@ -6,7 +6,7 @@
 (file2 b)
 (file2 c)
 
-(exec 0 
-    (, (file1     $x) )
-    (, (projected $x) )
+(exec 0
+  (, (file1 $x) )
+  (, (projected $x) )
 )
